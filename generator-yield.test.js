@@ -11,7 +11,7 @@ function* main() {
 }
 
 function request(url) {
-    ajax(url, function (response) {
+    ajax(url, function (err, response) {
         it.next(response);
     });
 }

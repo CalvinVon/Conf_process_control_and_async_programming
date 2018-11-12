@@ -119,23 +119,27 @@ promise的三种状态
 
 - 创造一个Promise实例
 ```js
-const promise = new Promise(function(resolve, reject) {
+const promise = new Promise(function (resolve, reject) {
   // ... some code
 
-  if (/* 异步操作成功 */){
+  if (/* 异步操作成功 */) {
     resolve(value);
-  } else {
+  }
+  else {
     reject(error);
   }
 });
 ```
 - Promise实例生成以后，可以用then方法分别指定`resolved`状态和`rejected`状态的回调函数。
 ```js
-promise.then(function(value) {
-  // success
-}, function(error) {
-  // failure
-});
+promise.then(
+  function(value) {
+    // success
+  },
+  function(error) {
+    // failure
+  }
+);
 ```
 [note]
 Promise构造函数接受一个函数作为参数，该函数的两个参数分别是resolve和reject。它们是两个函数，由 JavaScript 引擎提供，不用自己部署。<br>
@@ -236,21 +240,248 @@ const observable = Observable.create(function (observer) {
 ```
 
 [slide]
-# 其他的解决方案
-- async库
-- Node.js q模块 co模块
+# 第三方解决方案
+- [async库](https://caolan.github.io/async/)
+- Node.js q模块 [co模块](https://github.com/tj/co)
 
 [slide]
 # async 库
+> async 在 node 环境和浏览器环境中均可使用
 [slide]
-# ES6 原生解决方案 generator/yield
-[slide]
-# ES6 原生解决方案 async/await
-[slide]
+有关集合 Collections 的方法
 
-Generator函数很特殊，理解起来比promise和callback更加难，从语法上将，generator具备以下特质：
+> async.each(coll, iteratee, callback)
 
-定义Generator时，需要使用function*。
-使用时生成一个Generator对象。
-执行.next()激活暂停状态，开始执行内部代码，直到遇到yield，返回此时执行的结果，并记住此时执行的上下文，暂停。
-再次执行.next()时重复第三步。
+```js
+async.each(openFiles, function(file, callback) {
+
+    // Perform operation on file here.
+    console.log('Processing file ' + file);
+
+    if( file.length > 32 ) {
+      console.log('This file name is too long');
+      callback('File name too long');
+    } else {
+      // Do work to process file here
+      console.log('File processed');
+      callback();
+    }
+}, function(err) {
+    // if any of the file processing produced an error, err would equal that error
+    if( err ) {
+      // One of the iterations produced an error.
+      // All processing will now stop.
+      console.log('A file failed to process');
+    } else {
+      console.log('All files have been processed successfully');
+    }
+});
+```
+{:&.moveIn}
+> async.eachSeries
+> async.map
+> async.mapSeries
+[note]
+并行 与 顺序
+[/note]
+
+[slide]
+有关流程控制 Control Flow 的方法
+
+> async.waterfall(tasks, callback)
+
+{:&.moveIn}
+
+```js
+async.waterfall(
+[
+  function (callback) {
+    callback(null, "kyfxbl", 29);  
+  },
+  function (name, age, callback) {
+    console.log(name); // kyfxbl  
+    console.log(age); // 29  
+    callback(null, 10000, 200);  
+  },
+  function (salary, bonus, callback) {
+    console.log(salary);// 10000  
+    console.log(bonus);// 200  
+    callback(null, [1, 2, 3]);  
+  }
+],
+function (err, results) {  
+  if (err) return console.error(err);
+  console.log(results); // [1, 2, 3]  
+});
+```
+[note]
+这个可能是async库中最重要的一个方法，可以解决callback嵌套的问题。<br>
+上一个流程的执行结果，会传给下一个流程的参数。如果其中一个流程出错，则会中止后续流程的执行，直接调用最终的callback。否则最后一个流程的结果，会传递给最终callback
+[/note]
+
+[slide]
+# ES6 原生解决方案
+> generator/yield
+Generator 函数是一个状态机，还是一个遍历器对象生成函数。
+
+[slide]
+[magic data-transition="move"]
+## Generator 函数
+====
+## 协程（coroutine）
+
+> **协程（coroutine）**是一种程序运行的方式，可以理解成“协作的线程”或“协作的函数”。协程既可以用单线程实现，也可以用多线程实现。前者是一种特殊的子例程，后者是一种特殊的线程。
+
+====
+
+- 协程适合用于多任务运行的环境。  {:&.moveIn}
+与普通线程不同之处在于，同一时间可以有多个线程**处于运行状态**，但是运行的协程只能有**一个**，其他协程都处于暂停状态。
+- 此外，普通的线程是**抢先式**的，到底哪个线程优先得到资源，必须由运行环境决定，但是协程是**合作式**的，执行权由协程自己分配。
+- 由于 JavaScript 是单线程语言，只能保持一个调用栈。引入协程以后，每个任务可以**保持自己的调用栈**。这样做的最大好处，就是抛出错误的时候，可以找到原始的调用栈。不至于像异步操作的回调函数那样，一旦出错，原始的调用栈早就结束。
+
+====
+
+- 如果将 Generator 函数当作协程，完全可以将多个需要互相协作的任务写成 `Generator` 函数，它们之间使用`yield`表达式交换控制权。
+
+- 第一步，协程A开始执行。
+- 第二步，协程A执行到一半，进入暂停，执行权转移到协程B。
+- 第三步，（一段时间后）协程B交还执行权。
+- 第四步，协程A恢复执行。
+[/magic]
+
+[note]
+传统的编程语言，早有异步编程的解决方案（其实是多任务的解决方案）。其中有一种叫做"协程"（coroutine），意思是多个线程互相协作，完成异步任务。
+<br>
+看个例子
+[/note]
+
+[slide]
+{:&.moveIn}
+```js
+function* gen(x) {
+  var y = yield x + 2;
+  return y;
+}
+
+var g = gen(1);
+g.next() // { value: 3, done: false }
+g.next() // { value: undefined, done: true }
+```
+- 执行 Generator 函数会返回一个**遍历器对象**，也就是说，Generator 函数除了状态机，还是一个遍历器对象生成函数。返回的遍历器对象，可以依次遍历 Generator 函数内部的每一个状态。
+
+[note]
+协程遇到yield命令就暂停，等到执行权返回，再从暂停的地方继续往后执行。它的最大优点，就是代码的写法非常像同步操作，如果去除yield命令，简直一模一样。<br>
+yield => 产出<br>
+浏览器演示 `var it = [1,2,3,4][Symbol.iterator]()`
+[/note]
+
+[slide]
+{:&.moveIn}
+- 封装一个异步函数
+
+```js
+// 封装
+function* gen () {
+  var url = 'http://api.domain/some/api';
+  var result = yield axios.get(url);
+  console.log(result);
+}
+
+// 调用
+var g = gen();
+
+g.next()
+  .then(data => {
+    return data.json();
+  })
+  .then(data => {
+    g.next(data);
+  });
+```
+[note]
+可以看到，虽然 Generator 函数将异步操作表示得很简洁，但是流程管理却不方便（即何时执行第一阶段、何时执行第二阶段）。<br>
+Thunk 函数【传值调用 和 传名调用】
+[/note]
+
+[slide]
+> 我们需要自动执行 Generator 函数！
+
+<br>
+- 两种方法可以做到这一点。
+  1. **回调函数**。将异步操作包装成 `Thunk` 函数，在回调函数里面交回执行权。
+  2. **Promise 对象**。将异步操作包装成 `Promise` 对象，用then方法交回执行权。
+
+[slide]
+# 自动执行 Generator 函数 —— Thunk 函数 {:&.moveIn}
+> 编译器的“传名调用”实现，往往是将参数放到一个临时函数之中，再将这个临时函数传入函数体。这个临时函数就叫做 Thunk 函数。
+
+```js
+// 正常版本的readFile（多参数版本）
+fs.readFile(fileName, callback);
+
+// Thunk版本的readFile（单参数版本）
+var Thunk = function (fileName) {
+  return function (callback) {
+    return fs.readFile(fileName, callback);
+  };
+};
+
+var readFileThunk = Thunk(fileName);
+readFileThunk(callback);
+```
+[slide]
+# co 模块 {:&.moveIn}
+
+- co 模块可以让你不用编写 Generator 函数的执行器。
+
+```js
+var gen = function* () {
+  var f1 = yield readFile('/etc/fstab');
+  var f2 = yield readFile('/etc/shells');
+  console.log(f1.toString());
+  console.log(f2.toString());
+};
+```
+
+- co函数返回一个Promise对象，因此可以用then方法添加回调函数。
+
+```js
+var co = require('co');
+co(gen)
+  .then(function (){
+    console.log('Generator 函数执行完成');
+  });
+```
+[slide]
+# 最终解决方案！！！ async/await
+> async函数 只是 generator 函数的**语法糖**
+[slide]
+```js
+const fs = require('fs');
+
+const readFile = function (fileName) {
+  return new Promise(function (resolve, reject) {
+    fs.readFile(fileName, function(error, data) {
+      if (error) return reject(error);
+      resolve(data);
+    });
+  });
+};
+
+const gen = function* () {
+  const f1 = yield readFile('/etc/fstab');
+  const f2 = yield readFile('/etc/shells');
+  console.log(f1.toString());
+  console.log(f2.toString());
+};
+```
+
+```js
+const asyncReadFile = async function () {
+  const f1 = await readFile('/etc/fstab');
+  const f2 = await readFile('/etc/shells');
+  console.log(f1.toString());
+  console.log(f2.toString());
+};
+```
+[slide]
