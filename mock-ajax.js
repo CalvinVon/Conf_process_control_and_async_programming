@@ -1,47 +1,42 @@
 exports.ajax = function makeAjaxCall(url, callback) {
-    console.log('I gona request' + url);
+    console.log('GET > ' + url);
     setTimeout(() => {
-        console.log('request success!');
-        callback(null, '{ "code": 0 }')
+        console.log('GET success!');
+        callback(null, JSON.stringify({
+            code: 0,
+            url,
+            msg: 'OK'
+        }))
     }, 3000);
 };
 
-// exports.promisefy = function (funn) {
-//     return function() {
-//         const args = arguments;
-//         return new Promise(function (resolve, reject) {
-//             const callback = function(err, data) {
-//                 if (err) {
-//                     reject(err);
-//                 }
-//                 else {
-//                     resolve(data);
-//                 }
-//             };
-//             const _args = Array.prototype.slice.call(args);
-//             _args.push(callback);
-//             funn.apply(null, _args);
-//         });
-//     }
-// }
+exports.thunkify = function (fn) {
+    function thunkable () {
+        const args = Array.prototype.slice.call(arguments);
+        return function (callback) {
+            args.push(callback);
+            return fn.apply(this, args);
+        }
+    };
 
-exports.promisefy = function (funn) {
-    function awaitable () {
-        const args = arguments;
+    return thunkable;
+};
+
+exports.promisefy = function (fn) {
+    function awaitable() {
+        const args = Array.prototype.slice.call(arguments);
         return new Promise(function (resolve, reject) {
-            const callback = function(err, data) {
+            const callback = function (err, data) {
                 if (err) {
                     reject(err);
-                }
-                else {
+                } else {
                     resolve(data);
                 }
             };
-            const _args = Array.prototype.slice.call(args);
-            _args.push(callback);
-            funn.apply(null, _args);
+            args.push(callback);
+            fn.apply(null, args);
         });
     }
 
     return awaitable;
-}
+};
