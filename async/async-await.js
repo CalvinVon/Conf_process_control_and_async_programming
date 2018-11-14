@@ -1,4 +1,4 @@
-const { ajax, promisefy } = require('../mock-ajax');
+const { ajax, promisefy } = require('../ajax-utils');
 
 async function asyncMain() {
     const asyncAjax = promisefy(ajax);

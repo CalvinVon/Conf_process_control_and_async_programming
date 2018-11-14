@@ -1,21 +1,21 @@
 const {
   ajax,
   thunkify
-} = require('../mock-ajax');
+} = require('../ajax-utils');
 
 const run = require('./autorun');
-const _ajax = thunkify(ajax);
+const ajax_thunkify = thunkify(ajax);
 
-// _ajax('api.domain.com')((err, data) => {
-//   console.log(data)
-// })
+ajax_thunkify('api.domain.com')((err, data) => {
+  console.log(data)
+})
 
-function* gen() {
-  const result1 = yield _ajax('/some/api');
-  console.log(result1);
-  const result2 = yield _ajax('/other/api');
-  console.log(result2);
-}
+// function* gen() {
+//   const result1 = yield ajax_thunkify('/some/api');
+//   console.log(result1);
+//   const result2 = yield ajax_thunkify('/other/api');
+//   console.log(result2);
+// }
 
 // const g = gen();
 
@@ -28,4 +28,4 @@ function* gen() {
 //     })
 //   })
 
-run(gen)
+// run(gen)

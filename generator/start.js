@@ -1,8 +1,8 @@
-const { ajax, promisefy } = require('../mock-ajax');
+const { ajax, promisefy } = require('../ajax-utils');
 
 // const _ajax = promisefy(ajax);
 
-// 封装
+// 封装
 function* gen () {
   const url = 'http://api.domain/some/api';
   const result = yield ajax(url, (err, data) => {
