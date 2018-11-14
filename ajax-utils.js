@@ -7,7 +7,7 @@ exports.ajax = function makeAjaxCall(url, callback) {
             url,
             msg: 'OK'
         }))
-    }, 3000);
+    }, 1000);
 };
 
 exports.thunkify = function (fn) {
